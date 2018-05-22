@@ -15,6 +15,10 @@
 #include <linux/input.h>
 #include <linux/joystick.h>
 
+/* NOTE: both modules 'joystick' and 'wiringPi' must be downloaded for this to work properly. */
+
+
+/* mapping of LEDs on the board to the GPIO pins on the raspberry pi. */
 #define LED_1		4		
 #define LED_2		17		
 #define LED_3		22		
@@ -23,6 +27,7 @@
 #define LED_6		11		
 #define BUZZER		8		
 
+/* indexes into the various buttons. */
 #define A_BUTTON	0
 #define B_BUTTON	1
 #define X_BUTTON	2
@@ -32,7 +37,12 @@
 #define START		6
 #define BACK		7
 
-
+/*
+ *	turnOnLeds
+ *	Description: will turn on the various LEDs depending on the buttons pressed.
+ *	Inputs:	button_map -- the array of buttons, 1 for pressed, 0 for unpressed.
+ *	Outputs: None.
+ */
 void turnOnLeds(char* button_map) {
 
 	if (button_map[A_BUTTON] == 1) {
@@ -77,7 +87,7 @@ void turnOnLeds(char* button_map) {
 		digitalWrite(LED_6, LOW);
 	}
 
-	if (button_map[7] == 1) {
+	if (button_map[BACK] == 1) {
 		digitalWrite(BUZZER, HIGH);
 	}
 	else {
@@ -95,13 +105,15 @@ int main(void)
 	char* button;
 	struct js_event js;
 
-
+	/* initialize wiringPi */
 	wiringPiSetupSys();
+
 	if ((fd = open("/dev/input/js0", O_RDONLY)) < 0) {
 		printf("could not open");
 		return -1;
 	}
 
+	/* declare all the separate LEDs and the buzzer as outputs */
 	pinMode(LED_2, OUTPUT);
 	pinMode(LED_1, OUTPUT);
 	pinMode(LED_3, OUTPUT);
@@ -110,9 +122,11 @@ int main(void)
 	pinMode(LED_6, OUTPUT);
 	pinMode(BUZZER, OUTPUT);
 
+	/* get the number of axes and buttons for the controller */
 	ioctl(fd, JSIOCGBUTTONS, &num_buttons);
 	ioctl(fd, JSIOCGAXES, &num_axes);
 
+	/* allocate space for all the axes and buttons */
 	axis = (int*) calloc(num_axes, sizeof(int));
 	button = (char*) calloc(num_buttons, sizeof(char));
 
@@ -124,8 +138,9 @@ int main(void)
 			return -1;
 		}
 
+		/* check whether what changed was an axis or a button, and store the value accordingly */
 		switch (js.type & ~JS_EVENT_INIT) {
-			case JS_EVENT_AXIS:
+			case JS_EVENT_AXIS:					// currently does nothing with axes values, will be added later.
 				axis[js.number] = js.value;
 				break;
 			case JS_EVENT_BUTTON:
