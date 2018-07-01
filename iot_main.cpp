@@ -31,6 +31,10 @@
 #include "azure_c_shared_utility/threadapi.h"
 #include "azure_c_shared_utility/platform.h"
 
+// Combination of previous controller input reading with new IOT hub implementation
+// IOT hub code is highly inspired by some practice code for a temperature sensor, 
+// https://github.com/Azure-Samples/iot-hub-c-raspberrypi-getstartedkit/blob/master/samples/remote_monitoring/remote_monitoring.c
+
 /* mapping of LEDs on the board to the GPIO pins on the raspberry pi. */
 #define LED_1		4		
 #define LED_2		17		
@@ -50,6 +54,7 @@
 #define START		6
 #define BACK		7
 
+// Specific to the IOT hub, likely to change
 static const char* deviceId = "raspberryPi3";
 static const char* deviceKey = "7O369bU/PvaUjFXnC3wGeJWhQ2y/yGPAmUzfTKedKX8=";
 static const char* hubName = "PhilPiHub";
@@ -80,7 +85,7 @@ _Bool, HubEnabledState
 
 DECLARE_MODEL(Controller,
 
-/* Event data (temperature, external temperature and humidity) */
+/* Event data (buttons, right analog, left analog) */
 WITH_DATA(char, Buttons),
 WITH_DATA(float, RightAnalog),
 WITH_DATA(float, LeftAnalog),
@@ -308,7 +313,7 @@ static void remote_monitoring_run(void)
 
 							STRING_delete(commandsMetadata);
 						}
-
+						// INIT to zero for all
 						controller->Buttons = 0;
 						controller->RightAnalog = 0;
 						controller->LeftAnalog = 0;
@@ -371,6 +376,8 @@ static void remote_monitoring_run(void)
 							controller->Buttons = buttons;
 							controller->RightAnalog = rightAnalog;
 							controller->LeftAnalog = leftAnalog;
+
+							// not confident that this totally works...
 
 							if (SERIALIZE(&buffer, &bufferSize, controller->DeviceId, controller->Buttons, controller->RightAnalog, controller->LeftAnalog) != IOT_AGENT_OK)
 							{
